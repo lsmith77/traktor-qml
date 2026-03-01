@@ -1,0 +1,61 @@
+import QtQuick 2.0
+
+import '../../Defines'
+
+QtObject {
+
+  function convertToTimeString(inSeconds)
+  {
+    var neg = (inSeconds < 0);
+    var roundedSec = Math.floor(inSeconds);
+
+    if (neg)
+    {
+      roundedSec = -roundedSec;
+    }
+
+    var sec = roundedSec % 60;
+    var min = (roundedSec - sec) / 60;
+      
+    var secStr = sec.toString();
+    if (sec < 10) secStr = "0" + secStr;
+      
+    var minStr = min.toString();
+    if (min < 10) minStr = "0" + minStr;
+    
+    return (neg ? "-" : "") + minStr + ":" + secStr;
+  }
+
+  function computeRemainingTimeString(length, elapsed)
+  {
+    return ((elapsed > length) ? convertToTimeString(0) : convertToTimeString( Math.floor(elapsed) - Math.floor(length)));
+  }
+
+  function convertToCamelotKey(key)
+  {
+    if (!Prefs.camelotKey) {
+      return key;
+    }
+
+    return key.replace(/(\d+)(d|m)/, function (match, pitch, scale) {
+      return (+pitch + 6) % 12 + 1 + (scale == "d" ? "B" : "A");
+    });
+  }
+
+  function getMasterKeyOffset(masterKey, trackKey) {
+    var masterKeyMatches = masterKey.match(/(\d+)(d|m)/);
+    var trackKeyMatches = trackKey.match(/(\d+)(d|m)/);
+
+    if (!masterKeyMatches || !trackKeyMatches) return null;
+    if (masterKeyMatches[1] == trackKeyMatches[1]) return 0;
+    if (masterKeyMatches[2] != trackKeyMatches[2]) return null;
+
+    var offset = (+trackKeyMatches[1] - +masterKeyMatches[1] + 12) % 12;
+    if (offset == 1 || offset == 2 || offset == 7) return offset;
+
+    offset -= 12;
+    if (offset == -1 || offset == -2 || offset == -7) return offset;
+
+    return null;
+  }
+}
