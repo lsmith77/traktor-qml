@@ -601,8 +601,136 @@ Module
   readonly property int freezeMode:   2
   readonly property int loopMode:     3
   readonly property int remixMode:    4
+  readonly property int stemMode:     5
 
-  MappingPropertyDescriptor { id: padsMode;   path: propertiesPath + ".pads_mode";     type: MappingPropertyDescriptor.Integer;  value: disabledMode  }
+  // D2 v0.4.0: Stem filter state per stem slot (shift+pads 5-8 toggle)
+  AppProperty { id: sfxStem1FilterOn; path: "app.traktor.decks." + padsFocusedDeckId + ".stems.1.filter_on" }
+  AppProperty { id: sfxStem2FilterOn; path: "app.traktor.decks." + padsFocusedDeckId + ".stems.2.filter_on" }
+  AppProperty { id: sfxStem3FilterOn; path: "app.traktor.decks." + padsFocusedDeckId + ".stems.3.filter_on" }
+  AppProperty { id: sfxStem4FilterOn; path: "app.traktor.decks." + padsFocusedDeckId + ".stems.4.filter_on" }
+
+  // D2 v0.4.0: Dynamic AppProperties for the pad-focused deck's stems (stem FX pads 5-8).
+  // Paths update automatically when padsFocusedDeckId changes.
+  // Standard stem layout: Stem 1=Drums, Stem 2=Bass, Stem 3=Melody, Stem 4=Vocals.
+  AppProperty { id: sfxStem1Muted;    path: "app.traktor.decks." + padsFocusedDeckId + ".stems.1.muted"      }
+  AppProperty { id: sfxStem1FxSendOn; path: "app.traktor.decks." + padsFocusedDeckId + ".stems.1.fx_send_on" }
+  AppProperty { id: sfxStem2Muted;    path: "app.traktor.decks." + padsFocusedDeckId + ".stems.2.muted"      }
+  AppProperty { id: sfxStem2FxSendOn; path: "app.traktor.decks." + padsFocusedDeckId + ".stems.2.fx_send_on" }
+  AppProperty { id: sfxStem3Muted;    path: "app.traktor.decks." + padsFocusedDeckId + ".stems.3.muted"      }
+  AppProperty { id: sfxStem3FxSendOn; path: "app.traktor.decks." + padsFocusedDeckId + ".stems.3.fx_send_on" }
+  AppProperty { id: sfxStem4Muted;    path: "app.traktor.decks." + padsFocusedDeckId + ".stems.4.muted"      }
+  AppProperty { id: sfxStem4FxSendOn; path: "app.traktor.decks." + padsFocusedDeckId + ".stems.4.fx_send_on" }
+  // D2 v0.4.0: 4FX mode — assign the focused channel to FX unit 4 and control it directly.
+  // Dynamic property tracks the currently focused deck; static ones allow deactivating all other decks.
+  AppProperty { id: sfxChannelFxAssign4;   path: "app.traktor.mixer.channels." + padsFocusedDeckId + ".fx.assign.4" }
+  AppProperty { id: sfxChannelFxAssign4_1; path: "app.traktor.mixer.channels.1.fx.assign.4" }
+  AppProperty { id: sfxChannelFxAssign4_2; path: "app.traktor.mixer.channels.2.fx.assign.4" }
+  AppProperty { id: sfxChannelFxAssign4_3; path: "app.traktor.mixer.channels.3.fx.assign.4" }
+  AppProperty { id: sfxChannelFxAssign4_4; path: "app.traktor.mixer.channels.4.fx.assign.4" }
+  AppProperty { id: sfxFxUnit4Enabled;   path: "app.traktor.fx.4.enabled"  }
+  AppProperty { id: sfxFxUnit4DryWet;    path: "app.traktor.fx.4.dry_wet"  }
+  // D2 v0.4.0: FX unit 4 type: set to Group Mode (0) once per set.
+  AppProperty { id: sfxFxUnit4Type;      path: "app.traktor.fx.4.type" }
+  // Group Mode effect slots (three slots in group mode).
+  AppProperty { id: sfxFxUnit4Select1;   path: "app.traktor.fx.4.select.1" }
+  AppProperty { id: sfxFxUnit4Select2;   path: "app.traktor.fx.4.select.2" }
+  AppProperty { id: sfxFxUnit4Select3;   path: "app.traktor.fx.4.select.3" }
+  // FX unit 4 buttons and knobs (Group Mode)
+  AppProperty { id: sfxFxUnit4Button1;   path: "app.traktor.fx.4.buttons.1" }
+  AppProperty { id: sfxFxUnit4Button2;   path: "app.traktor.fx.4.buttons.2" }
+  AppProperty { id: sfxFxUnit4Button3;   path: "app.traktor.fx.4.buttons.3" }
+  AppProperty { id: sfxFxUnit4Knob1;     path: "app.traktor.fx.4.knobs.1"  }
+  AppProperty { id: sfxFxUnit4Knob2;     path: "app.traktor.fx.4.knobs.2"  }
+  AppProperty { id: sfxFxUnit4Knob3;     path: "app.traktor.fx.4.knobs.3"  }
+  // D2 v0.4.0: Group Mode effect indices — set once per set.
+  // FxType.Group = 0. Slot 1=Delay T3, Slot 2=Reverb, Slot 3=Turntable FX.
+  readonly property int sfxFxTypeGroup:                 0
+  readonly property int sfxDelayEffectIndexGroup:       7
+  readonly property int sfxReverbEffectIndexGroup:      20
+  readonly property int sfxTurntableFxEffectIndexGroup: 18
+  // Flag to track if group mode has been initialized (true = don't reinitialize every pad press)
+  property bool sfxGroupModeInitialized: false
+  // Per-pad held state for LEDs (hold-to-apply: press activates, release reverts).
+  property bool sfxPad5Held: false
+  property bool sfxPad6Held: false
+  property bool sfxPad7Held: false
+  property bool sfxPad8Held: false
+
+  // D2 v0.4.0: Initialize FX unit 4 to Group Mode with Delay, Reverb, Turntable FX (once per set).
+  function sfxGroupModeInit() {
+    if (!sfxGroupModeInitialized) {
+      if (sfxDelayEffectIndexGroup >= 0 && sfxTurntableFxEffectIndexGroup >= 0 && sfxReverbEffectIndexGroup >= 0) {
+        sfxFxUnit4Type.value    = sfxFxTypeGroup
+        sfxFxUnit4Select1.value = sfxDelayEffectIndexGroup
+        sfxFxUnit4Select2.value = sfxReverbEffectIndexGroup
+        sfxFxUnit4Select3.value = sfxTurntableFxEffectIndexGroup
+        sfxFxUnit4Enabled.value = true
+        sfxFxUnit4DryWet.value  = 0.0
+        sfxGroupModeInitialized = true
+      }
+    }
+  }
+
+  // D2 v0.4.0: Route specific stems through FX unit 4 (Group Mode).
+  function sfxFxUnitStartGroup(effectIndex, config) {
+    sfxGroupModeInit()
+    sfxStem1FxSendOn.value      = config.stems[0] || false
+    sfxStem2FxSendOn.value      = config.stems[1] || false
+    sfxStem3FxSendOn.value      = config.stems[2] || false
+    sfxStem4FxSendOn.value      = config.stems[3] || false
+    sfxChannelFxAssign4_1.value = false
+    sfxChannelFxAssign4_2.value = false
+    sfxChannelFxAssign4_3.value = false
+    sfxChannelFxAssign4_4.value = false
+    sfxChannelFxAssign4.value   = true
+    sfxFxUnit4DryWet.value      = config.dryWet  || 1.0
+    if (config.knob1 !== undefined) sfxFxUnit4Knob1.value = config.knob1
+    if (config.knob2 !== undefined) sfxFxUnit4Knob2.value = config.knob2
+    if (config.knob3 !== undefined) sfxFxUnit4Knob3.value = config.knob3
+    if (config.button1) sfxFxUnit4Button1.value = true
+    if (config.button2) sfxFxUnit4Button2.value = true
+    if (config.button3) sfxFxUnit4Button3.value = true
+  }
+
+  // D2 v0.4.0: Teardown — resets stem routing and disables FX unit.
+  function sfxFxUnitTeardown() {
+    sfxStem1FxSendOn.value      = false
+    sfxStem2FxSendOn.value      = false
+    sfxStem3FxSendOn.value      = false
+    sfxStem4FxSendOn.value      = false
+    sfxChannelFxAssign4.value   = false
+    sfxFxUnit4Enabled.value     = false
+    sfxFxUnit4DryWet.value      = 0.0
+    sfxFxUnit4Button1.value     = false
+    sfxFxUnit4Button2.value     = false
+    sfxFxUnit4Button3.value     = false
+    sfxFxUnit4Knob1.value       = 0.0
+    sfxFxUnit4Knob2.value       = 0.0
+    sfxFxUnit4Knob3.value       = 0.0
+  }
+
+  MappingPropertyDescriptor { id: padsMode;   path: propertiesPath + ".pads_mode";     type: MappingPropertyDescriptor.Integer;  value: disabledMode
+    // D2 v0.4.0: Initialize/teardown FX state on stemMode enter/exit
+    onValueChanged:
+    {
+      if (value == stemMode)
+      {
+        sfxGroupModeInit()
+      }
+      if (value != stemMode)
+      {
+        sfxChannelFxAssign4_1.value = false
+        sfxChannelFxAssign4_2.value = false
+        sfxChannelFxAssign4_3.value = false
+        sfxChannelFxAssign4_4.value = false
+        sfxPad5Held = false
+        sfxPad6Held = false
+        sfxPad7Held = false
+        sfxPad8Held = false
+        sfxFxUnitTeardown()
+      }
+    }
+  }
   MappingPropertyDescriptor { id: padsFocus;  path: propertiesPath + ".pads_focus";    type: MappingPropertyDescriptor.Boolean;  value: false         }
 
   MappingPropertyDescriptor
@@ -702,6 +830,16 @@ Module
           padsMode.value = remixMode;
           padsFocus.value = deckFocus;
         }
+        // D2 v0.4.0: redirect Remix button press to stemMode for Stem decks
+        else if (focusedDeckType == DeckType.Stem)
+        {
+          if (padsMode.value == stemMode)
+          {
+            sfxGroupModeInitialized = false
+          }
+          padsMode.value = stemMode;
+          padsFocus.value = deckFocus;
+        }
         else if (unfocusedDeckType == DeckType.Remix)
         {
           padsMode.value = remixMode;
@@ -763,7 +901,9 @@ Module
         break;
 
       case remixMode:
-        isValid = hasRemixMode(thisDeckType) || hasRemixMode(otherDeckType);
+        // D2 v0.4.0: Stem decks are valid in remixMode context (redirected to stemMode at runtime)
+        isValid = hasRemixMode(thisDeckType) || hasRemixMode(otherDeckType)
+                  || thisDeckType == DeckType.Stem;
         break;
     }
 
@@ -1856,7 +1996,7 @@ Module
         Wire { from: "%surface%.hotcue";  to: SetPropertyAdapter { path: propertiesPath + ".top.pads_mode"; value: hotcueMode;  color: Color.Blue } enabled: hasHotcues(deckAType) }
         Wire { from: "%surface%.loop";    to: SetPropertyAdapter { path: propertiesPath + ".top.pads_mode"; value: loopMode;    color: Color.Blue } enabled: hasLoopMode(deckAType) }
         Wire { from: "%surface%.freeze";  to: ButtonScriptAdapter { brightness: ((topDeckPadsMode.value == freezeMode) ? onBrightness : dimmedBrightness); color: Color.Blue; onPress: { deckAExitFreeze = onFreezeButtonPress(topDeckPadsMode, deckAIsLoaded.value);  } onRelease: { onFreezeButtonRelease(topDeckPadsMode, deckAExitFreeze, deckAType); } } enabled: hasFreezeMode(deckAType) }
-        Wire { from: "%surface%.remix";   to: SetPropertyAdapter { path: propertiesPath + ".top.pads_mode"; value: remixMode;   color: (hasRemixMode(deckAType) ? Color.Blue : Color.White) } enabled: hasRemixMode(deckAType) || hasRemixMode(deckCType)  }
+        Wire { from: "%surface%.remix";   to: SetPropertyAdapter { path: propertiesPath + ".top.pads_mode"; value: remixMode;   color: (hasRemixMode(deckAType) ? Color.Blue : Color.White) } enabled: hasRemixMode(deckAType) || hasRemixMode(deckCType) || deckAType == DeckType.Stem || deckCType == DeckType.Stem  }
       }
 
       // Deck C
@@ -1867,7 +2007,7 @@ Module
         Wire { from: "%surface%.hotcue";  to: SetPropertyAdapter { path: propertiesPath + ".bottom.pads_mode"; value: hotcueMode;  color: Color.White } enabled: hasHotcues(deckCType) }
         Wire { from: "%surface%.loop";    to: SetPropertyAdapter { path: propertiesPath + ".bottom.pads_mode"; value: loopMode;    color: Color.White } enabled: hasLoopMode(deckCType) }
         Wire { from: "%surface%.freeze";  to: ButtonScriptAdapter  { brightness: ((bottomDeckPadsMode.value == freezeMode) ? onBrightness : dimmedBrightness); color: Color.White; onPress: { deckCExitFreeze = onFreezeButtonPress(bottomDeckPadsMode, deckCIsLoaded.value);  } onRelease: { onFreezeButtonRelease(bottomDeckPadsMode, deckCExitFreeze, deckCType); } } enabled: hasFreezeMode(deckCType) }
-        Wire { from: "%surface%.remix";   to: SetPropertyAdapter { path: propertiesPath + ".bottom.pads_mode"; value: remixMode;   color: (hasRemixMode(deckCType) ? Color.White : Color.Blue) } enabled: hasRemixMode(deckAType) || hasRemixMode(deckCType ) }
+        Wire { from: "%surface%.remix";   to: SetPropertyAdapter { path: propertiesPath + ".bottom.pads_mode"; value: remixMode;   color: (hasRemixMode(deckCType) ? Color.White : Color.Blue) } enabled: hasRemixMode(deckAType) || hasRemixMode(deckCType) || deckAType == DeckType.Stem || deckCType == DeckType.Stem }
       }
 
       // Deck B
@@ -1878,7 +2018,7 @@ Module
         Wire { from: "%surface%.hotcue"; to: SetPropertyAdapter { path: propertiesPath + ".top.pads_mode"; value: hotcueMode;  color: Color.Blue } enabled: hasHotcues(deckBType)}
         Wire { from: "%surface%.loop";   to: SetPropertyAdapter { path: propertiesPath + ".top.pads_mode"; value: loopMode;    color: Color.Blue } enabled: hasLoopMode(deckBType) || (deckBType == DeckType.Remix) }
         Wire { from: "%surface%.freeze"; to: ButtonScriptAdapter  { brightness: ((topDeckPadsMode.value == freezeMode) ? onBrightness : dimmedBrightness); color: Color.Blue; onPress: { deckBExitFreeze = onFreezeButtonPress(topDeckPadsMode, deckBIsLoaded.value);  } onRelease: { onFreezeButtonRelease(topDeckPadsMode, deckBExitFreeze, deckBType); } } enabled: hasFreezeMode(deckBType) }
-        Wire { from: "%surface%.remix";  to: SetPropertyAdapter { path: propertiesPath + ".top.pads_mode"; value: remixMode;   color: (hasRemixMode(deckBType)? Color.Blue : Color.White) } enabled: hasRemixMode(deckBType) || hasRemixMode(deckDType) }
+        Wire { from: "%surface%.remix";  to: SetPropertyAdapter { path: propertiesPath + ".top.pads_mode"; value: remixMode;   color: (hasRemixMode(deckBType)? Color.Blue : Color.White) } enabled: hasRemixMode(deckBType) || hasRemixMode(deckDType) || deckBType == DeckType.Stem || deckDType == DeckType.Stem }
       }
 
       // Deck D
@@ -1889,7 +2029,7 @@ Module
         Wire { from: "%surface%.hotcue"; to: SetPropertyAdapter { path: propertiesPath + ".bottom.pads_mode"; value: hotcueMode;  color: Color.White } enabled: hasHotcues(deckDType) }
         Wire { from: "%surface%.loop";   to: SetPropertyAdapter { path: propertiesPath + ".bottom.pads_mode"; value: loopMode;    color: Color.White } enabled: hasLoopMode(deckDType ) }
         Wire { from: "%surface%.freeze"; to: ButtonScriptAdapter  { brightness: ((bottomDeckPadsMode.value == freezeMode) ? onBrightness : dimmedBrightness); color: Color.White; onPress: { deckDExitFreeze = onFreezeButtonPress(bottomDeckPadsMode, deckDIsLoaded.value);  } onRelease: { onFreezeButtonRelease(bottomDeckPadsMode, deckDExitFreeze, deckDType); } } enabled: hasFreezeMode(deckDType) }
-        Wire { from: "%surface%.remix";  to: SetPropertyAdapter { path: propertiesPath + ".bottom.pads_mode"; value: remixMode;   color: (hasRemixMode(deckDType)? Color.White : Color.Blue) } enabled: hasRemixMode(deckBType) || hasRemixMode(deckDType) }
+        Wire { from: "%surface%.remix";  to: SetPropertyAdapter { path: propertiesPath + ".bottom.pads_mode"; value: remixMode;   color: (hasRemixMode(deckDType)? Color.White : Color.Blue) } enabled: hasRemixMode(deckBType) || hasRemixMode(deckDType) || deckBType == DeckType.Stem || deckDType == DeckType.Stem }
       }
 
       //------------------------------------------------------------------------------------------------------------------
@@ -2063,6 +2203,33 @@ Module
             }
           }
         }
+
+        // D2 v0.4.0: Stem Mute (S5-style: pads 1-4 toggle stem slot mute)
+        WiresGroup
+        {
+          enabled: padsMode.value == stemMode && !module.shift
+
+          Wire { from: "%surface%.pads.1"; to: "decks.1.stems.1.muted" }
+          Wire { from: "%surface%.pads.2"; to: "decks.1.stems.2.muted" }
+          Wire { from: "%surface%.pads.3"; to: "decks.1.stems.3.muted" }
+          Wire { from: "%surface%.pads.4"; to: "decks.1.stems.4.muted" }
+        }
+
+        // D2 v0.4.0: Stem shift pads — FX send on/off (1-4) + filter on/off (5-8)
+        WiresGroup
+        {
+          enabled: padsMode.value == stemMode && module.shift
+
+          Wire { from: "%surface%.pads.1"; to: "decks.1.stems.1.fx_send_on" }
+          Wire { from: "%surface%.pads.2"; to: "decks.1.stems.2.fx_send_on" }
+          Wire { from: "%surface%.pads.3"; to: "decks.1.stems.3.fx_send_on" }
+          Wire { from: "%surface%.pads.4"; to: "decks.1.stems.4.fx_send_on" }
+
+          Wire { from: "%surface%.pads.5"; to: ButtonScriptAdapter { color: Color.Blue; brightness: sfxStem1FilterOn.value ? onBrightness : dimmedBrightness; onPress: { sfxStem1FilterOn.value = !sfxStem1FilterOn.value } } }
+          Wire { from: "%surface%.pads.6"; to: ButtonScriptAdapter { color: Color.Blue; brightness: sfxStem2FilterOn.value ? onBrightness : dimmedBrightness; onPress: { sfxStem2FilterOn.value = !sfxStem2FilterOn.value } } }
+          Wire { from: "%surface%.pads.7"; to: ButtonScriptAdapter { color: Color.Blue; brightness: sfxStem3FilterOn.value ? onBrightness : dimmedBrightness; onPress: { sfxStem3FilterOn.value = !sfxStem3FilterOn.value } } }
+          Wire { from: "%surface%.pads.8"; to: ButtonScriptAdapter { color: Color.Blue; brightness: sfxStem4FilterOn.value ? onBrightness : dimmedBrightness; onPress: { sfxStem4FilterOn.value = !sfxStem4FilterOn.value } } }
+        }
       }
 
       // Deck C
@@ -2232,6 +2399,33 @@ Module
             }
           }
         }
+
+        // D2 v0.4.0: Stem Mute (S5-style: pads 1-4 toggle stem slot mute)
+        WiresGroup
+        {
+          enabled: padsMode.value == stemMode && !module.shift
+
+          Wire { from: "%surface%.pads.1"; to: "decks.3.stems.1.muted" }
+          Wire { from: "%surface%.pads.2"; to: "decks.3.stems.2.muted" }
+          Wire { from: "%surface%.pads.3"; to: "decks.3.stems.3.muted" }
+          Wire { from: "%surface%.pads.4"; to: "decks.3.stems.4.muted" }
+        }
+
+        // D2 v0.4.0: Stem shift pads — FX send on/off (1-4) + filter on/off (5-8)
+        WiresGroup
+        {
+          enabled: padsMode.value == stemMode && module.shift
+
+          Wire { from: "%surface%.pads.1"; to: "decks.3.stems.1.fx_send_on" }
+          Wire { from: "%surface%.pads.2"; to: "decks.3.stems.2.fx_send_on" }
+          Wire { from: "%surface%.pads.3"; to: "decks.3.stems.3.fx_send_on" }
+          Wire { from: "%surface%.pads.4"; to: "decks.3.stems.4.fx_send_on" }
+
+          Wire { from: "%surface%.pads.5"; to: ButtonScriptAdapter { color: Color.Blue; brightness: sfxStem1FilterOn.value ? onBrightness : dimmedBrightness; onPress: { sfxStem1FilterOn.value = !sfxStem1FilterOn.value } } }
+          Wire { from: "%surface%.pads.6"; to: ButtonScriptAdapter { color: Color.Blue; brightness: sfxStem2FilterOn.value ? onBrightness : dimmedBrightness; onPress: { sfxStem2FilterOn.value = !sfxStem2FilterOn.value } } }
+          Wire { from: "%surface%.pads.7"; to: ButtonScriptAdapter { color: Color.Blue; brightness: sfxStem3FilterOn.value ? onBrightness : dimmedBrightness; onPress: { sfxStem3FilterOn.value = !sfxStem3FilterOn.value } } }
+          Wire { from: "%surface%.pads.8"; to: ButtonScriptAdapter { color: Color.Blue; brightness: sfxStem4FilterOn.value ? onBrightness : dimmedBrightness; onPress: { sfxStem4FilterOn.value = !sfxStem4FilterOn.value } } }
+        }
       }
 
       // Deck B
@@ -2399,6 +2593,33 @@ Module
               Wire { from: "%surface%.edit";   to: "decks.2.remix_sequencer.clear_selected_slot";  }
             }
           }
+        }
+
+        // D2 v0.4.0: Stem Mute (S5-style: pads 1-4 toggle stem slot mute)
+        WiresGroup
+        {
+          enabled: padsMode.value == stemMode && !module.shift
+
+          Wire { from: "%surface%.pads.1"; to: "decks.2.stems.1.muted" }
+          Wire { from: "%surface%.pads.2"; to: "decks.2.stems.2.muted" }
+          Wire { from: "%surface%.pads.3"; to: "decks.2.stems.3.muted" }
+          Wire { from: "%surface%.pads.4"; to: "decks.2.stems.4.muted" }
+        }
+
+        // D2 v0.4.0: Stem shift pads — FX send on/off (1-4) + filter on/off (5-8)
+        WiresGroup
+        {
+          enabled: padsMode.value == stemMode && module.shift
+
+          Wire { from: "%surface%.pads.1"; to: "decks.2.stems.1.fx_send_on" }
+          Wire { from: "%surface%.pads.2"; to: "decks.2.stems.2.fx_send_on" }
+          Wire { from: "%surface%.pads.3"; to: "decks.2.stems.3.fx_send_on" }
+          Wire { from: "%surface%.pads.4"; to: "decks.2.stems.4.fx_send_on" }
+
+          Wire { from: "%surface%.pads.5"; to: ButtonScriptAdapter { color: Color.Blue; brightness: sfxStem1FilterOn.value ? onBrightness : dimmedBrightness; onPress: { sfxStem1FilterOn.value = !sfxStem1FilterOn.value } } }
+          Wire { from: "%surface%.pads.6"; to: ButtonScriptAdapter { color: Color.Blue; brightness: sfxStem2FilterOn.value ? onBrightness : dimmedBrightness; onPress: { sfxStem2FilterOn.value = !sfxStem2FilterOn.value } } }
+          Wire { from: "%surface%.pads.7"; to: ButtonScriptAdapter { color: Color.Blue; brightness: sfxStem3FilterOn.value ? onBrightness : dimmedBrightness; onPress: { sfxStem3FilterOn.value = !sfxStem3FilterOn.value } } }
+          Wire { from: "%surface%.pads.8"; to: ButtonScriptAdapter { color: Color.Blue; brightness: sfxStem4FilterOn.value ? onBrightness : dimmedBrightness; onPress: { sfxStem4FilterOn.value = !sfxStem4FilterOn.value } } }
         }
       }
 
@@ -2569,12 +2790,177 @@ Module
             }
           }
         }
+
+        // D2 v0.4.0: Stem Mute (S5-style: pads 1-4 toggle stem slot mute)
+        WiresGroup
+        {
+          enabled: padsMode.value == stemMode && !module.shift
+
+          Wire { from: "%surface%.pads.1"; to: "decks.4.stems.1.muted" }
+          Wire { from: "%surface%.pads.2"; to: "decks.4.stems.2.muted" }
+          Wire { from: "%surface%.pads.3"; to: "decks.4.stems.3.muted" }
+          Wire { from: "%surface%.pads.4"; to: "decks.4.stems.4.muted" }
+        }
+
+        // D2 v0.4.0: Stem shift pads — FX send on/off (1-4) + filter on/off (5-8)
+        WiresGroup
+        {
+          enabled: padsMode.value == stemMode && module.shift
+
+          Wire { from: "%surface%.pads.1"; to: "decks.4.stems.1.fx_send_on" }
+          Wire { from: "%surface%.pads.2"; to: "decks.4.stems.2.fx_send_on" }
+          Wire { from: "%surface%.pads.3"; to: "decks.4.stems.3.fx_send_on" }
+          Wire { from: "%surface%.pads.4"; to: "decks.4.stems.4.fx_send_on" }
+
+          Wire { from: "%surface%.pads.5"; to: ButtonScriptAdapter { color: Color.Blue; brightness: sfxStem1FilterOn.value ? onBrightness : dimmedBrightness; onPress: { sfxStem1FilterOn.value = !sfxStem1FilterOn.value } } }
+          Wire { from: "%surface%.pads.6"; to: ButtonScriptAdapter { color: Color.Blue; brightness: sfxStem2FilterOn.value ? onBrightness : dimmedBrightness; onPress: { sfxStem2FilterOn.value = !sfxStem2FilterOn.value } } }
+          Wire { from: "%surface%.pads.7"; to: ButtonScriptAdapter { color: Color.Blue; brightness: sfxStem3FilterOn.value ? onBrightness : dimmedBrightness; onPress: { sfxStem3FilterOn.value = !sfxStem3FilterOn.value } } }
+          Wire { from: "%surface%.pads.8"; to: ButtonScriptAdapter { color: Color.Blue; brightness: sfxStem4FilterOn.value ? onBrightness : dimmedBrightness; onPress: { sfxStem4FilterOn.value = !sfxStem4FilterOn.value } } }
+        }
       }
 
       // Freeze
       Wire { from: "%surface%.freeze"; to: DirectPropertyAdapter { path: propertiesPath + ".freeze"; output: false } enabled: hasFreezeMode(focusedDeckType) }
 
       SwitchTimer { name: "RemixHoldTimer";  setTimeout: 250 }
+
+      //------------------------------------------------------------------------------------------------------------------
+      // D2 v0.4.0: STEM FX PADS (Serato-style: pads 5-8 in stemMode — hold to apply, release to revert)
+      //
+      //  Standard stem layout: Stem 1=Drums  Stem 2=Bass  Stem 3=Melody  Stem 4=Vocals
+      //
+      //  Pad 5  Drums Echo        — fx_send_on stem 1 only    (Delay T3 + Reverb on FX unit 4)
+      //  Pad 6  Instrumental Turntable FX — fx_send_on stems 1+2+3  (Turntable FX on FX unit 4)
+      //  Pad 7  Instrumental Echo — fx_send_on stems 1+2+3    (Delay T3 + Reverb on FX unit 4)
+      //  Pad 8  Vocal Echo        — fx_send_on stem 4 only    (Delay T3 + Reverb on FX unit 4)
+      //
+      //  On press (unmuted): route target stems through FX unit 4; mute applied on release.
+      //  On press (muted):   unmute immediately; no FX.
+      //  On release: if FX was applied, mute target stems; tear down FX unit state.
+      //------------------------------------------------------------------------------------------------------------------
+
+      WiresGroup
+      {
+        enabled: padsMode.value == stemMode && !module.shift
+
+        // Pad 5: Drums Echo (Delay T3 + Reverb)
+        Wire
+        {
+          from: "%surface%.pads.5"
+          to: ButtonScriptAdapter
+          {
+            brightness: sfxPad5Held ? onBrightness : (sfxStem1Muted.value ? 0.8 : 0.1)
+            onPress:
+            {
+              if (sfxStem1Muted.value)
+              {
+                sfxStem1Muted.value = false
+              }
+              else
+              {
+                sfxPad5Held = true
+                sfxFxUnitStartGroup(sfxDelayEffectIndexGroup, { stems: [true, false, false, false], enabled: true, dryWet: 1.0, button1: true, knob1: 0.15, button2: true, knob2: 0.35 })
+              }
+            }
+            onRelease:
+            {
+              if (sfxPad5Held) { sfxStem1Muted.value = true }
+              sfxPad5Held = false
+              sfxFxUnitTeardown()
+            }
+          }
+        }
+
+        // Pad 6: Instrumental Turntable FX
+        Wire
+        {
+          from: "%surface%.pads.6"
+          to: ButtonScriptAdapter
+          {
+            brightness: sfxPad6Held ? onBrightness : ((sfxStem1Muted.value && sfxStem2Muted.value && sfxStem3Muted.value) ? 0.8 : 0.1)
+            onPress:
+            {
+              var allMuted = sfxStem1Muted.value && sfxStem2Muted.value && sfxStem3Muted.value
+              if (allMuted)
+              {
+                sfxStem1Muted.value = false
+                sfxStem2Muted.value = false
+                sfxStem3Muted.value = false
+              }
+              else
+              {
+                sfxPad6Held = true
+                sfxFxUnitStartGroup(sfxTurntableFxEffectIndexGroup, { stems: [true, true, true, false], enabled: true, dryWet: 1.0, knob3: 0.55, button3: true })
+              }
+            }
+            onRelease:
+            {
+              if (sfxPad6Held) { sfxStem1Muted.value = true; sfxStem2Muted.value = true; sfxStem3Muted.value = true }
+              sfxPad6Held = false
+              sfxFxUnitTeardown()
+            }
+          }
+        }
+
+        // Pad 7: Instrumental Echo (Delay T3 + Reverb)
+        Wire
+        {
+          from: "%surface%.pads.7"
+          to: ButtonScriptAdapter
+          {
+            brightness: sfxPad7Held ? onBrightness : ((sfxStem1Muted.value && sfxStem2Muted.value && sfxStem3Muted.value) ? 0.8 : 0.1)
+            onPress:
+            {
+              var allMuted = sfxStem1Muted.value && sfxStem2Muted.value && sfxStem3Muted.value
+              if (allMuted)
+              {
+                sfxStem1Muted.value = false
+                sfxStem2Muted.value = false
+                sfxStem3Muted.value = false
+              }
+              else
+              {
+                sfxPad7Held = true
+                sfxFxUnitStartGroup(sfxDelayEffectIndexGroup, { stems: [true, true, true, false], enabled: true, dryWet: 1.0, button1: true, knob1: 0.15, button2: true, knob2: 0.35 })
+              }
+            }
+            onRelease:
+            {
+              if (sfxPad7Held) { sfxStem1Muted.value = true; sfxStem2Muted.value = true; sfxStem3Muted.value = true }
+              sfxPad7Held = false
+              sfxFxUnitTeardown()
+            }
+          }
+        }
+
+        // Pad 8: Vocal Echo (Delay T3 + Reverb)
+        Wire
+        {
+          from: "%surface%.pads.8"
+          to: ButtonScriptAdapter
+          {
+            brightness: sfxPad8Held ? onBrightness : (sfxStem4Muted.value ? 0.8 : 0.1)
+            onPress:
+            {
+              if (sfxStem4Muted.value)
+              {
+                sfxStem4Muted.value = false
+              }
+              else
+              {
+                sfxPad8Held = true
+                sfxFxUnitStartGroup(sfxDelayEffectIndexGroup, { stems: [false, false, false, true], enabled: true, dryWet: 1.0, button1: true, knob1: 0.45, button2: true, knob2: 0.35 })
+              }
+            }
+            onRelease:
+            {
+              if (sfxPad8Held) { sfxStem4Muted.value = true }
+              sfxPad8Held = false
+              sfxFxUnitTeardown()
+            }
+          }
+        }
+      }
 
       WiresGroup
       {

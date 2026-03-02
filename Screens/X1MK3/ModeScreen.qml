@@ -21,6 +21,14 @@ Item {
   MappingProperty { id: deviceSetupStateProp; path: screen.propertiesPath + ".device_setup_state" }
   property alias deviceSetupState: deviceSetupStateProp.value
 
+  MappingProperty { id: deviceSetupPageProp; path: screen.propertiesPath + ".device_setup_page" }
+  // readonly property string deviceSetupPageString: "SETUP PAGE " + deviceSetupPageProp.value
+  readonly property string deviceSetupPageString: setupText[deviceSetupPageProp.value] + "SETUP P. " + deviceSetupPageProp.value
+  readonly property variant setupText: ["", " MIXER  ", "BRWS./BEAT. ", " MISC./FX  "]
+  
+  MappingProperty { id: deckAssignmentProp; path: "mapping.settings.deck_assignment" }
+  MappingProperty { id: customDeckSwitchAcVariantProp; path: "mapping.settings.custom_deck_switch_ac_variant" }
+  
   MappingProperty { id: leftDeckIdxProp; path: screen.propertiesPath + ".left_deck_index" }
   property alias leftDeckIdx: leftDeckIdxProp.value
 
@@ -41,7 +49,12 @@ Item {
   AppProperty { id: deckBLevelProp; path: "app.traktor.mixer.channels.2.level.prefader.linear.sum" }
   AppProperty { id: deckCLevelProp; path: "app.traktor.mixer.channels.3.level.prefader.linear.sum" }
   AppProperty { id: deckDLevelProp; path: "app.traktor.mixer.channels.4.level.prefader.linear.sum" }
-  readonly property real metersFactor: 0.8
+  // readonly property real metersFactor: 0.8
+  readonly property real metersFactor: 0.7
+
+  AppProperty { id: masterLevelProp; path: "app.traktor.mixer.master.level.sum" }
+  AppProperty { id: masterLevelClipProp; path: "app.traktor.mixer.master.level.clip.sum" }
+  AppProperty { id: limiterStateProp; path: "app.traktor.mixer.master.limiter_state" }
 
   function deckImage(layer, deckIdx)
   {
@@ -127,121 +140,365 @@ Item {
       visible: (deviceSetupState == DeviceSetupState.assigned) &&
                (fxSectionLayer.value == FXSectionLayer.mixer)
 
-      ThinText {
+      // ThinText {
+          // anchors {
+              // top: parent.top
+              // left: parent.left
+              // right: parent.right
+              // topMargin: -8
+              // leftMargin: -12
+          // }
+          // text: " MIXER"
+          // horizontalAlignment: Text.AlignHCenter
+      // }
+
+      // Master level meter
+      Item {
+        anchors {
+          top: parent.top
+          left: parent.left
+          right: parent.right
+        }
+        height: 20
+
+        Image {
           anchors {
               top: parent.top
               left: parent.left
-              right: parent.right
-              topMargin: -8
-              leftMargin: -12
+              topMargin: 10
+              leftMargin: 10
           }
-          text: " MIXER"
-          horizontalAlignment: Text.AlignHCenter
-      }
-  
-      Image {
-          anchors {
-              bottom: parent.bottom
-              left: parent.left
-          }
-  
-          source:    "Images/" + deckImage(fxSectionLayer.value, leftDeckIdx)
-          fillMode:  Image.PreserveAspectFit
-      }
-  
-      Image {
-          anchors {
-              bottom: parent.bottom
-              right: parent.right
-          }
-  
-          source:    "Images/" + deckImage(fxSectionLayer.value, rightDeckIdx)
-          fillMode:  Image.PreserveAspectFit
-      }
-  
-      Image {
-        anchors {
-            left: parent.left
-            bottom: parent.bottom
-            leftMargin: 43
-        }
-        source: "Images/VolumeMeter.png"
+          source: "Images/MasterMeter.png"
 
+          // Master level
+          Rectangle
+          {
+            anchors {
+                top: parent.top
+                left: parent.left
+                bottom: parent.bottom
+            }
+
+            color: "white"
+            width: Math.min(masterLevelProp.value * parent.width * 0.9, 86)
+          }
+
+          // Master Orange
+          Rectangle
+          {
+            anchors {
+                top: parent.top
+                left: parent.left
+                bottom: parent.bottom
+                leftMargin: 64
+            }
+
+            color: "white"
+            width: 2
+          }
+
+          // Master clip
+          Rectangle
+          {
+            visible: masterLevelClipProp.value != 0
+            anchors {
+                top: parent.top
+                left: parent.left
+                bottom: parent.bottom
+                leftMargin: 89
+            }
+
+            color: "white"
+            width: 21
+          }
+        }
+
+        // Limiter state
         Rectangle
         {
+          visible: limiterStateProp.value != 0
           anchors {
+              top: parent.top
               left: parent.left
-              right: parent.right
               bottom: parent.bottom
+              topMargin: 6
+              leftMargin: 94
           }
 
           color: "white"
-          height: Math.min(deckCLevelProp.value * parent.height * metersFactor, 36)
+          width: 2
         }
       }
-
+  
+      // Channel ID Left
       Image {
         anchors {
+          bottom: parent.bottom
+          left: parent.left
+          leftMargin: (deckAssignmentProp.value == DeviceAssignment.decks_a_b) ? 16 : (deckAssignmentProp.value == DeviceAssignment.decks_b_d) ? 30 : 0
+        }
+  
+        source:    "Images/" + deckImage(fxSectionLayer.value, leftDeckIdx)
+        fillMode:  Image.PreserveAspectFit
+      }
+ 
+      // Channel ID Right
+      Image {
+        anchors {
+          bottom: parent.bottom
+          right: parent.right
+          rightMargin: (deckAssignmentProp.value == DeviceAssignment.decks_a_b) ? 16 : ( (deckAssignmentProp.value == DeviceAssignment.decks_c_d) || (deckAssignmentProp.value == DeviceAssignment.decks_b_d) ) ? 0 : 30
+        }
+
+        source:    "Images/" + deckImage(fxSectionLayer.value, rightDeckIdx)
+        fillMode:  Image.PreserveAspectFit
+      }
+  
+  
+      // Channel 1 level meter
+      Item {
+        anchors {
+          left: parent.left
+            leftMargin: ( (deckAssignmentProp.value == DeviceAssignment.decks_a_b) || (deckAssignmentProp.value == DeviceAssignment.decks_b_d) ) ? 0 : 40
+          bottom: parent.bottom
+        }
+        width: 12
+        height: 55
+
+        Image {
+          anchors {
             left: parent.left
             bottom: parent.bottom
-            leftMargin: 55
-        }
-        source: "Images/VolumeMeter.png"
+          }
+          source: "Images/EQMeter_bipolar.png"
 
-        Rectangle
-        {
-          anchors {
+          Rectangle {
+            anchors {
               left: parent.left
               right: parent.right
               bottom: parent.bottom
+            }
+
+            color: "white"
+            height: customDeckSwitchAcVariantProp.value ? (Math.min(deckALevelProp.value * parent.height * metersFactor, 38)) : (Math.min(deckCLevelProp.value * parent.height * metersFactor, 38))
           }
 
-          color: "white"
-          height: Math.min(deckALevelProp.value * parent.height * metersFactor, 36)
         }
-      }
+        
+        Rectangle {
+          // color: ( (deckAssignmentProp.value == DeviceAssignment.decks_a_c) || (deckAssignmentProp.value == DeviceAssignment.decks_c_a) || (deckAssignmentProp.value == DeviceAssignment.decks_c_d) ) ? "white" : "black"
+          color: ( ( customDeckSwitchAcVariantProp.value && (deckALevelProp.value > 1.5) ) || ( !customDeckSwitchAcVariantProp.value && (deckCLevelProp.value > 1.5) ) ) ? "white" : "black"
+          anchors {
+            right: parent.right
+            rightMargin: 6
+            bottom: parent.bottom
+            bottomMargin: 38
+          }
+          width: 7
+          height: 9
+        }
 
-      Image {
+        ThinText {
+          anchors {
+            right: parent.right
+            rightMargin: 6
+            bottom: parent.bottom
+            bottomMargin: 35
+          }
+          
+          font.pixelSize: 12
+          font.capitalization: Font.AllUppercase
+          horizontalAlignment: Text.AlignRight
+          text: customDeckSwitchAcVariantProp.value ? "A" : "C"
+          // color: ( (deckAssignmentProp.value == DeviceAssignment.decks_a_c) || (deckAssignmentProp.value == DeviceAssignment.decks_c_a) || (deckAssignmentProp.value == DeviceAssignment.decks_c_d) ) ? "black" : "white"
+          color: ( ( customDeckSwitchAcVariantProp.value && (deckALevelProp.value > 1.5) ) || ( !customDeckSwitchAcVariantProp.value && (deckCLevelProp.value > 1.5) ) ) ? "black" : "white"
+        }
+
+      }
+      
+      // Channel 2 level meter
+      Item {
         anchors {
+          left: parent.left
+          leftMargin: ( (deckAssignmentProp.value == DeviceAssignment.decks_a_b) || (deckAssignmentProp.value == DeviceAssignment.decks_c_d) ) ? 56 : (deckAssignmentProp.value == DeviceAssignment.decks_b_d) ? 12 : 52
+          bottom: parent.bottom
+        }
+        width: 12
+        height: 55
+
+        Image {
+          anchors {
             left: parent.left
             bottom: parent.bottom
-            leftMargin: 67
-        }
-        source: "Images/VolumeMeter.png"
+          }
+          source: "Images/EQMeter_bipolar.png"
 
-        Rectangle
-        {
-          anchors {
+          Rectangle {
+            anchors {
               left: parent.left
               right: parent.right
               bottom: parent.bottom
+            }
+
+            color: "white"
+            height: customDeckSwitchAcVariantProp.value ? (Math.min(deckCLevelProp.value * parent.height * metersFactor, 38)) : (Math.min(deckALevelProp.value * parent.height * metersFactor, 38))
           }
-
-          color: "white"
-          height: Math.min(deckBLevelProp.value * parent.height * metersFactor, 36)
+          
         }
-      }
-
-      Image {
-        anchors {
-            left: parent.left
-            bottom: parent.bottom
-            leftMargin: 79
-        }
-        source: "Images/VolumeMeter.png"
-
-        Rectangle
-        {
+        
+        Rectangle {
+          // color: ( (deckAssignmentProp.value == DeviceAssignment.decks_a_b) || (deckAssignmentProp.value == DeviceAssignment.decks_a_c) || (deckAssignmentProp.value == DeviceAssignment.decks_c_a) ) ? "white" : "black"
+          color: ( ( !customDeckSwitchAcVariantProp.value && (deckALevelProp.value > 1.5) ) || ( customDeckSwitchAcVariantProp.value && (deckCLevelProp.value > 1.5) ) ) ? "white" : "black"
           anchors {
+            right: parent.right
+            rightMargin: 6
+            bottom: parent.bottom
+            bottomMargin: 38
+          }
+          width: 7
+          height: 9
+        }
+
+        ThinText {
+          anchors {
+            right: parent.right
+            rightMargin: 6
+            bottom: parent.bottom
+            bottomMargin: 35
+          }
+          
+          font.pixelSize: 12
+          font.capitalization: Font.AllUppercase
+          horizontalAlignment: Text.AlignRight
+          text: customDeckSwitchAcVariantProp.value ? "C" : "A"
+          // color: ( (deckAssignmentProp.value == DeviceAssignment.decks_a_b) || (deckAssignmentProp.value == DeviceAssignment.decks_a_c) || (deckAssignmentProp.value == DeviceAssignment.decks_c_a) ) ? "black" : "white"
+          color: ( ( !customDeckSwitchAcVariantProp.value && (deckALevelProp.value > 1.5) ) || ( customDeckSwitchAcVariantProp.value && (deckCLevelProp.value > 1.5) ) ) ? "black" : "white"
+        }
+
+      }
+      
+      // Channel 3 level meter
+      Item {
+        anchors {
+          right: parent.right
+          rightMargin: ( (deckAssignmentProp.value == DeviceAssignment.decks_a_b) || (deckAssignmentProp.value == DeviceAssignment.decks_c_d) ) ? 56 : (deckAssignmentProp.value == DeviceAssignment.decks_b_d) ? 52 : 12
+          bottom: parent.bottom
+        }
+        width: 12
+        height: 55
+
+        Image {
+          anchors {
+            right: parent.right
+            bottom: parent.bottom
+          }
+          source: "Images/EQMeter_bipolar.png"
+
+          Rectangle {
+            anchors {
               left: parent.left
               right: parent.right
               bottom: parent.bottom
+            }
+
+            color: "white"
+            height: Math.min(deckBLevelProp.value * parent.height * metersFactor, 38)
+          }
+          
+        }
+      
+        Rectangle {
+          // color: ( (deckAssignmentProp.value == DeviceAssignment.decks_a_b) || (deckAssignmentProp.value == DeviceAssignment.decks_b_d) ) ? "white" : "black"
+          color: (deckBLevelProp.value > 1.5) ? "white" : "black"
+          anchors {
+            right: parent.right
+            rightMargin: -1
+            bottom: parent.bottom
+            bottomMargin: 38
+          }
+          width: 7
+          height: 9
+        }
+
+        ThinText {
+          anchors {
+            right: parent.right
+            rightMargin: -1
+            bottom: parent.bottom
+            bottomMargin: 35
+          }
+          
+          font.pixelSize: 12
+          font.capitalization: Font.AllUppercase
+          horizontalAlignment: Text.AlignRight
+          text: "B"
+          // color: ( (deckAssignmentProp.value == DeviceAssignment.decks_a_b) || (deckAssignmentProp.value == DeviceAssignment.decks_b_d) ) ? "black" : "white"
+          color: (deckBLevelProp.value > 1.5) ? "black" : "white"
+        }
+
+      }
+
+      // Channel 4 level meter
+      Item {
+        anchors {
+          right: parent.right
+          rightMargin: (deckAssignmentProp.value == DeviceAssignment.decks_a_b) ? 0 : ( (deckAssignmentProp.value == DeviceAssignment.decks_c_d) || (deckAssignmentProp.value == DeviceAssignment.decks_b_d) ) ? 40 : 0
+          bottom: parent.bottom
+        }
+        width: 12
+        height: 55
+
+        Image {
+          anchors {
+            right: parent.right
+            bottom: parent.bottom
+          }
+          source: "Images/EQMeter_bipolar.png"
+
+          Rectangle {
+            anchors {
+              left: parent.left
+              right: parent.right
+              bottom: parent.bottom
+            }
+
+            color: "white"
+            height: Math.min(deckDLevelProp.value * parent.height * metersFactor, 38)
           }
 
-          color: "white"
-          height: Math.min(deckDLevelProp.value * parent.height * metersFactor, 36)
         }
+      
+        Rectangle {
+          // color: ( (deckAssignmentProp.value == DeviceAssignment.decks_c_d) || (deckAssignmentProp.value == DeviceAssignment.decks_b_d) ) ? "white" : "black"
+          color: (deckDLevelProp.value > 1.5) ? "white" : "black"
+          anchors {
+            right: parent.right
+            rightMargin: -1
+            bottom: parent.bottom
+            bottomMargin: 38
+          }
+          width: 7
+          height: 9
+        }
+
+        ThinText {
+          anchors {
+            right: parent.right
+            rightMargin: -1
+            bottom: parent.bottom
+            bottomMargin: 35
+          }
+          
+          font.pixelSize: 12
+          font.capitalization: Font.AllUppercase
+          horizontalAlignment: Text.AlignRight
+          text: "D"
+          // color: ( (deckAssignmentProp.value == DeviceAssignment.decks_c_d) || (deckAssignmentProp.value == DeviceAssignment.decks_b_d) ) ? "black" : "white"
+          color: (deckDLevelProp.value > 1.5) ? "black" : "white"
+        }
+        
       }
+
     }
 
     Item {
@@ -250,11 +507,14 @@ Item {
   
       ThinText {
           anchors.fill: parent
-          text: "DEVICE SETUP"
+          // text: "DEVICE SETUP"
+          text: deviceSetupPageString
           horizontalAlignment: Text.AlignHCenter
           wrapMode: Text.WordWrap
-          lineHeight: 29
-          lineHeightMode: Text.FixedHeight
+          // lineHeight: 29
+          // lineHeightMode: Text.FixedHeight
+          font.pixelSize: 24
+          font.capitalization: Font.AllUppercase
       }
     }
 
@@ -264,10 +524,14 @@ Item {
   
       ThinText {
           anchors.fill: parent
-          text: "¢"
-          font.pixelSize: 60
+          // text: "¢"
+          // text: "🦋"
+          // font.pixelSize: 60
+          text: "C.P.MOD V12 SÛLHEROKHH"
+          font.pixelSize: 24
           horizontalAlignment: Text.AlignHCenter
           wrapMode: Text.WordWrap
+          font.capitalization: Font.AllUppercase
       }
     }
   }

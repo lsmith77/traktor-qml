@@ -17,6 +17,10 @@ Module
   property int leftSecondaryFxIdx: 0
   property int rightSecondaryFxIdx: 0
 
+  property string fxAssignmentPropertiesPath: ""
+  property int sidePrimaryFxIdx: 0
+  property int sideSecondaryFxIdx: 0
+
   // Settings
   property int nudgePushAction: 0
   property int nudgeShiftPushAction: 0
@@ -54,6 +58,10 @@ Module
     leftSecondaryFxIdx: module.leftSecondaryFxIdx
     rightSecondaryFxIdx: module.rightSecondaryFxIdx
 
+    fxAssignmentPropertiesPath: module.fxAssignmentPropertiesPath
+    sidePrimaryFxIdx: module.sidePrimaryFxIdx
+    sideSecondaryFxIdx: module.sideSecondaryFxIdx
+
     nudgePushAction: module.nudgePushAction
     nudgeShiftPushAction: module.nudgeShiftPushAction
 
@@ -90,6 +98,10 @@ Module
     leftSecondaryFxIdx: module.leftSecondaryFxIdx
     rightSecondaryFxIdx: module.rightSecondaryFxIdx
 
+    fxAssignmentPropertiesPath: module.fxAssignmentPropertiesPath
+    sidePrimaryFxIdx: module.sidePrimaryFxIdx
+    sideSecondaryFxIdx: module.sideSecondaryFxIdx
+    
     nudgePushAction: module.nudgePushAction
     nudgeShiftPushAction: module.nudgeShiftPushAction
 
@@ -126,6 +138,10 @@ Module
     leftSecondaryFxIdx: module.leftSecondaryFxIdx
     rightSecondaryFxIdx: module.rightSecondaryFxIdx
 
+    fxAssignmentPropertiesPath: module.fxAssignmentPropertiesPath
+    sidePrimaryFxIdx: module.sidePrimaryFxIdx
+    sideSecondaryFxIdx: module.sideSecondaryFxIdx
+    
     nudgePushAction: module.nudgePushAction
     nudgeShiftPushAction: module.nudgeShiftPushAction
 
@@ -162,6 +178,10 @@ Module
     leftSecondaryFxIdx: module.leftSecondaryFxIdx
     rightSecondaryFxIdx: module.rightSecondaryFxIdx
 
+    fxAssignmentPropertiesPath: module.fxAssignmentPropertiesPath
+    sidePrimaryFxIdx: module.sidePrimaryFxIdx
+    sideSecondaryFxIdx: module.sideSecondaryFxIdx
+    
     nudgePushAction: module.nudgePushAction
     nudgeShiftPushAction: module.nudgeShiftPushAction
 
@@ -192,7 +212,8 @@ Module
   
   WiresGroup
   {
-    enabled: module.active && !shift && !syncModifierProp.value
+    // enabled: module.active && !shift && !syncModifierProp.value
+    enabled: module.active && !shift && !syncModifierProp.value && !browserModeProp.value
 
     Wire { from: "%surface%.loop.is_turned"; to: "show_loop_size_timer.input" }
     Wire { from: "show_loop_size_timer.output.value"; to: ValuePropertyAdapter { path: module.propertiesPath + ".show_loop_size"; output: false } }

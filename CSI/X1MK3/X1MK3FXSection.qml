@@ -1,4 +1,5 @@
 import CSI 1.0
+import QtQuick 2.0
 
 import "Defines"
 
@@ -20,7 +21,16 @@ Module
 
   //------------------------SUBMODULES----------------------------
 
-  MappingPropertyDescriptor { id: layerProp; path: module.propertiesPath + ".fx_section_layer"; type: MappingPropertyDescriptor.Integer; value: FXSectionLayer.fx_primary }
+  // MappingPropertyDescriptor { id: layerProp; path: module.propertiesPath + ".fx_section_layer"; type: MappingPropertyDescriptor.Integer; value: FXSectionLayer.fx_primary }
+  MappingPropertyDescriptor {
+    id: layerProp
+    path: module.propertiesPath + ".fx_section_layer"
+    type: MappingPropertyDescriptor.Integer
+    value: FXSectionLayer.fx_primary
+    onValueChanged: {
+      deviceSetup.resetOverlayOvermapping()
+    }
+  }
   property alias layer: layerProp.value
 
   MappingPropertyDescriptor { path: module.propertiesPath + ".left_deck_index"; type: MappingPropertyDescriptor.Integer; value: module.leftDeckIdx }
@@ -50,40 +60,124 @@ Module
     }
   }
 
+  // Wire
+  // {
+    // enabled: module.active
+    // from: "%surface%.mode"
+    // to: ButtonScriptAdapter {
+            // onPress: {
+              // switch (module.layer)
+              // {
+                // case FXSectionLayer.fx_primary:
+                  // module.layer = (fxMode.value == FxMode.TwoFxUnits ? FXSectionLayer.mixer : FXSectionLayer.fx_secondary);
+                  // break;
+
+                // case FXSectionLayer.fx_secondary:
+                  // module.layer = FXSectionLayer.mixer;
+                  // break;
+
+                // case FXSectionLayer.mixer:
+                  // module.layer = FXSectionLayer.fx_primary;
+                  // break;
+              // }
+            // }
+      // }
+  // }
   Wire
   {
-    enabled: module.active
+    enabled: module.active && !module.shift
     from: "%surface%.mode"
     to: ButtonScriptAdapter {
-            onPress: {
-              switch (module.layer)
-              {
-                case FXSectionLayer.fx_primary:
-                  module.layer = (fxMode.value == FxMode.TwoFxUnits ? FXSectionLayer.mixer : FXSectionLayer.fx_secondary);
-                  break;
+      onPress: {
+        if (switchOverlayTimer.running) {
+          switchOverlayTimer.stop()
+          
+          // if (browseShiftActionProp.value) {
+          if (customDeckSwitchOnSingleClickProp.value) {
+            switch (module.layer) {
+              case FXSectionLayer.fx_primary:
+                // module.layer = (fxMode.value == FxMode.TwoFxUnits ? (loopShiftActionProp.value ? FXSectionLayer.fx_primary : FXSectionLayer.mixer) : FXSectionLayer.fx_secondary);
+                module.layer = ( (fxMode.value == FxMode.TwoFxUnits) || (customSecondaryFXOverlayBlockProp.value || customLinkFXOverlayToDeckProp.value) ? (customMixerOverlayBlockProp.value ? FXSectionLayer.fx_primary : FXSectionLayer.mixer) : FXSectionLayer.fx_secondary);
+                break;
 
-                case FXSectionLayer.fx_secondary:
-                  module.layer = FXSectionLayer.mixer;
-                  break;
+              case FXSectionLayer.fx_secondary:
+                // module.layer = (loopShiftActionProp.value ? FXSectionLayer.fx_primary : FXSectionLayer.mixer);
+                module.layer = (customMixerOverlayBlockProp.value ? FXSectionLayer.fx_primary : FXSectionLayer.mixer);
+                break;
 
-                case FXSectionLayer.mixer:
-                  module.layer = FXSectionLayer.fx_primary;
-                  break;
-              }
+              case FXSectionLayer.mixer:
+                module.layer = FXSectionLayer.fx_primary;
+                break;
             }
+          }
+          else deviceSetup.deckswitch()
+          
+        }
+        else {
+          switchOverlayTimer.restart()
+          deviceSetupEnterTimer.restart()
+        }
       }
-  }
-
-  // Effects Mode
-  AppProperty { id: fxMode; path: "app.traktor.fx.4fx_units"; onValueChanged: fxModeChanged(); }
-
-  function fxModeChanged()
-  {
-    if (fxMode.value == FxMode.TwoFxUnits && module.layer == FXSectionLayer.fx_secondary)
-    {
-      module.layer = FXSectionLayer.fx_primary;
+      onRelease: {
+        if (deviceSetupEnterTimer.running) {
+          deviceSetupEnterTimer.stop()
+        }
+      }
     }
   }
+  Timer {
+    id: switchOverlayTimer;
+    interval: 300;
+    onTriggered: {
+      if (!deviceSetupEnterTimer.running) {
+        
+        // if (browseShiftActionProp.value) deviceSetup.deckswitch()
+        if (customDeckSwitchOnSingleClickProp.value) deviceSetup.deckswitch()
+        else {
+          switch (module.layer) {
+            case FXSectionLayer.fx_primary:
+              // module.layer = (fxMode.value == FxMode.TwoFxUnits ? (loopShiftActionProp.value ? FXSectionLayer.fx_primary : FXSectionLayer.mixer) : FXSectionLayer.fx_secondary);
+              module.layer = ( (fxMode.value == FxMode.TwoFxUnits) || (customSecondaryFXOverlayBlockProp.value || customLinkFXOverlayToDeckProp.value) ? (customMixerOverlayBlockProp.value ? FXSectionLayer.fx_primary : FXSectionLayer.mixer) : FXSectionLayer.fx_secondary);
+              break;
+
+            case FXSectionLayer.fx_secondary:
+              // module.layer = (loopShiftActionProp.value ? FXSectionLayer.fx_primary : FXSectionLayer.mixer);
+              module.layer = (customMixerOverlayBlockProp.value ? FXSectionLayer.fx_primary : FXSectionLayer.mixer);
+              break;
+
+            case FXSectionLayer.mixer:
+              module.layer = FXSectionLayer.fx_primary;
+              break;
+          }
+        }
+        
+      }
+    }
+  }
+  Timer {
+    id: deviceSetupEnterTimer;
+    // interval: 1000;
+    interval: 500;
+    onTriggered: {
+      deviceSetup.reset();
+    }
+  }
+
+  // Effects Mode ********* ALL MOVED TO X1MK3.qml ***********
+  // AppProperty { id: fxMode; path: "app.traktor.fx.4fx_units"; onValueChanged: fxModeChanged(); }
+
+  // function fxModeChanged() {
+    // // if (fxMode.value == FxMode.TwoFxUnits && module.layer == FXSectionLayer.fx_secondary)
+    // // {
+      // // module.layer = FXSectionLayer.fx_primary;
+    // // }
+    // if (fxMode.value == FxMode.TwoFxUnits) {
+      // fxAssignmentProp.value = DeviceAssignment.fx_1_2
+      // if (module.layer == FXSectionLayer.fx_secondary) {
+        // module.layer = FXSectionLayer.fx_primary
+      // }
+    // }
+  // }
 
   X1MK3FXSectionSide
   {
