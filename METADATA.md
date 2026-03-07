@@ -11,52 +11,66 @@
 
 ### [1] Baseline — traktor-kontrol-screens (Nexus Edition)
 
-| Field   | Value |
-|---------|-------|
-| Version | nexus branch @ f0a5027 |
-| Status  | APPLIED |
+| Field   | Value                                |
+| ------- | ------------------------------------ |
+| Version | nexus branch @ f0a5027               |
+| Status  | APPLIED                              |
 | Files   | All files in `qml/` not listed below |
 
 ### [2] D2 Stem Mods — traktor-kontrol-d2
 
-| Field   | Value |
-|---------|-------|
-| Version | v0.4.0 |
-| Tag     | `v0.4.0` (confirmed via git) |
-| Status  | APPLIED |
+| Field          | Value                         |
+| -------------- | ----------------------------- |
+| Version        | v0.5.0                        |
+| Tag            | `v0.5.0` (confirmed via git)  |
+| Status         | APPLIED                       |
 | Files modified | `CSI/Common/Deck_S8Style.qml` |
-| Controllers | D2 |
+| Controllers    | D2                            |
 
 **Features added:**
 
 - Pads 1-4: Toggle stem mute (S5-style) when in Stem Mode
-- Pads 5-8: Serato-style FX — hold to apply FX Unit 4 effect, release mutes stem
-  - Pad 5: Drums Echo (Delay T3 + Reverb on stem 1)
-  - Pad 6: Instrumental Turntable FX (stems 1+2+3)
-  - Pad 7: Instrumental Echo (Delay T3 + Reverb, stems 1+2+3)
-  - Pad 8: Vocal Echo (Delay T3 + Reverb on stem 4)
+- Pads 5-8: Serato-style FX — hold to apply FX effect, release mutes stem
+  - Pad 5: Drums Delay+Freeze (Delay on stem 1, single mode)
+  - Pad 6: Instrumental Turntable FX (stems 1+2+3, group mode with Beatmasher/Gater)
+  - Pad 7: Instrumental Delay+Freeze (Delay on stems 1+2+3, single mode)
+  - Pad 8: Vocal Delay+Freeze (Delay on stem 4, single mode)
+- **NEW:** Capture button: Toggle all-stems Delay+Freeze lock (toggle on/off, LED indicator)
+  - Only active in Stem Mode (configurable via `sfxCaptureFreezeOnlyInStemMode` property)
+  - When stem pad pressed, captures freeze automatically ends
 - Shift + Pads 1-4: Toggle FX send on/off per stem
 - Shift + Pads 5-8: Toggle Filter on/off per stem
-- Press Remix button on Stem deck → activates Stem Mode (pads auto-redirect)
+- Press Remix button on Stem deck → resets FX units and re-enters Stem Mode
 
-**FX Unit 4 configuration required:**
+**FX Unit Configuration:**
 
-Set in Traktor: Preferences > Effects > Effect Units > Unit 4 > Group Mode
+Set in Traktor: Preferences > Effects > Effect Units
 
-| Slot | Effect |
-|------|--------|
-| 1 | Delay T3 (Group Delay) |
-| 2 | Reverb |
-| 3 | Turntable FX |
+**Delay Unit (FX Unit 3, Single Mode):**
+
+- Default effect: Delay
+- Slot 1: Delay (TIME, FEEDBACK, DEPTH knobs)
+- Button 2: Freeze toggle
+- Used by Pads 5, 7, 8 and Capture button
+
+**Turntable Unit (FX Unit 4, Group Mode):**
+
+- Slot 1: Beatmasher
+- Slot 2: Gater
+- Slot 3: Turntable FX (BRK)
+- Button 3: BRK trigger; Knob 3: B.SPD
+- Used by Pad 6
+
+**To reassign FX units:** Edit `sfxDelayUnit = 3` and `sfxTurntableUnit = 4` properties in `Deck_S8Style.qml`
 
 ### [3] X1MK3 Performance Mod
 
-| Field   | Value |
-|---------|-------|
-| Version | v12 |
-| Tag     | `v12` (confirmed via git) |
-| Status  | APPLIED |
-| Controllers | X1 MK3 |
+| Field       | Value                     |
+| ----------- | ------------------------- |
+| Version     | v12                       |
+| Tag         | `v12` (confirmed via git) |
+| Status      | APPLIED                   |
+| Controllers | X1 MK3                    |
 
 **Files replaced** (full replacement, not merged):
 
@@ -96,14 +110,14 @@ Summary: MODE overlays, 3 setup pages, BPM/beatgrid control, vinyl break, CDJ LE
 
 ## Conflict Resolutions
 
-| Conflict | Resolution |
-|----------|-----------|
-| `Deck_S8Style.qml` version mismatch | D2 mod based on older baseline; surgically applied only the D2 stem additions to the newer nexus baseline. All nexus-specific features (BPM overlay, sync phase LED, MixerFX overlay, `flux_reverse`, waveform zoom encoder) retained. |
-| `CSI/X1MK3/Defines/` not in mod | Kept from baseline — mod imports these at runtime; they are unchanged. |
-| FX Unit 4 shared by D2 + X1MK3 | Intentional shared state. X1MK3 FX section can assign/control Unit 4; D2 stem FX also uses Unit 4. Normal workflow: configure Unit 4 presets once, use D2 pads for stem FX and X1MK3 FX buttons for unit selection. |
-| Timer values (ShowLoopSize, BrowserBack) | Kept nexus baseline values (50ms / 500ms). D2 mod had older values (500ms / 1000ms). |
-| `ScreenViewBlinker` cycle | Kept nexus baseline (1000ms). D2 mod had 300ms. |
-| Remix button wires | Kept baseline's `SetPropertyAdapter` approach (cleaner). Extended `enabled` condition to include `DeckType.Stem`. The `updatePads()` chain redirects `remixMode` → `stemMode` for Stem decks automatically. |
+| Conflict                                 | Resolution                                                                                                                                                                                                                             |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Deck_S8Style.qml` version mismatch      | D2 mod based on older baseline; surgically applied only the D2 stem additions to the newer nexus baseline. All nexus-specific features (BPM overlay, sync phase LED, MixerFX overlay, `flux_reverse`, waveform zoom encoder) retained. |
+| `CSI/X1MK3/Defines/` not in mod          | Kept from baseline — mod imports these at runtime; they are unchanged.                                                                                                                                                                 |
+| FX Unit 4 shared by D2 + X1MK3           | Intentional shared state. X1MK3 FX section can assign/control Unit 4; D2 stem FX also uses Unit 4. Normal workflow: configure Unit 4 presets once, use D2 pads for stem FX and X1MK3 FX buttons for unit selection.                    |
+| Timer values (ShowLoopSize, BrowserBack) | Kept nexus baseline values (50ms / 500ms). D2 mod had older values (500ms / 1000ms).                                                                                                                                                   |
+| `ScreenViewBlinker` cycle                | Kept nexus baseline (1000ms). D2 mod had 300ms.                                                                                                                                                                                        |
+| Remix button wires                       | Kept baseline's `SetPropertyAdapter` approach (cleaner). Extended `enabled` condition to include `DeckType.Stem`. The `updatePads()` chain redirects `remixMode` → `stemMode` for Stem decks automatically.                            |
 
 ---
 
