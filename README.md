@@ -6,11 +6,11 @@ This `qml/` directory combines the following mods on top of the traktor-kontrol-
 
 ## Integrated mods
 
-| Mod | Version | Controllers | Files |
-|-----|---------|-------------|-------|
-| [traktor-kontrol-screens Nexus](https://github.com/ErikMinekus/traktor-kontrol-screens/tree/nexus) | nexus @ f0a5027 | All | Baseline |
-| [traktor-kontrol-d2 Stem Mods](https://github.com/lsmith77/traktor-kontrol-d2/releases/tag/v0.4.0) | v0.4.0 | D2 | `CSI/Common/Deck_S8Style.qml` |
-| [X1MK3 Performance Mod](https://github.com/lsmith77/X1MK3_PerformanceMod/releases/tag/v12) | v12 | X1 MK3 | `CSI/X1MK3/`, `Screens/X1MK3/` |
+| Mod                                                                                                | Version         | Controllers | Files                                  |
+| -------------------------------------------------------------------------------------------------- | --------------- | ----------- | -------------------------------------- |
+| [traktor-kontrol-screens Nexus](https://github.com/ErikMinekus/traktor-kontrol-screens/tree/nexus) | nexus @ f0a5027 | All         | Baseline                               |
+| [traktor-kontrol-d2 Stem Mods](https://github.com/lsmith77/traktor-kontrol-d2/releases/tag/v0.4.0) | v0.4.0          | D2          | `qml/CSI/Common/Deck_S8Style.qml`      |
+| [X1MK3 Performance Mod](https://github.com/lsmith77/X1MK3_PerformanceMod/releases/tag/v12)         | v12             | X1 MK3      | `qml/CSI/X1MK3/`, `qml/Screens/X1MK3/` |
 
 **D2 stem features**: stem mute (pads 1–4), Serato-style FX pads (5–8 → FX Unit 4), shift+pads toggle FX send / filter per stem.
 
@@ -29,8 +29,8 @@ This `qml/` directory combines the following mods on top of the traktor-kontrol-
 cp -r ~/Library/Application\ Support/Native\ Instruments/Traktor\ 4.4.2/qml \
       ~/Library/Application\ Support/Native\ Instruments/Traktor\ 4.4.2/qml.backup
 
-# Copy this directory
-cp -r /path/to/this/qml/ \
+# Copy the qml subdirectory
+cp -r /path/to/this/qml/qml/ \
       ~/Library/Application\ Support/Native\ Instruments/Traktor\ 4.4.2/qml/
 
 # Restart Traktor
@@ -48,35 +48,35 @@ The content below is from the original traktor-kontrol-screens Nexus README.
 
 **Changes in appearance:**
 
-  - **[Browser]** Keys are only colored if they match the master deck
-    - **Yellow**: Perfect match
-    - **Orange**: Adjacent keys
-    - **Green**: Energy boost
-    - **Blue**: Energy drop
-  - **[Browser]** Loaded tracks are marked green
-  - **[Browser]** Played tracks are marked dark green
-  - Added bar markers on large waveform
-  - Added minute markers on stripe waveform
-  - Camelot keys
-  - FX overlay is always large
-  - Improved FX select
-  - Improved spacing
-  - Improved waveform zooming so that more beats are visible
-  - Spectrum waveform colors
-  - Track deck header displays beats, remaining time, BPM and tempo
+- **[Browser]** Keys are only colored if they match the master deck
+  - **Yellow**: Perfect match
+  - **Orange**: Adjacent keys
+  - **Green**: Energy boost
+  - **Blue**: Energy drop
+- **[Browser]** Loaded tracks are marked green
+- **[Browser]** Played tracks are marked dark green
+- Added bar markers on large waveform
+- Added minute markers on stripe waveform
+- Camelot keys
+- FX overlay is always large
+- Improved FX select
+- Improved spacing
+- Improved waveform zooming so that more beats are visible
+- Spectrum waveform colors
+- Track deck header displays beats, remaining time, BPM and tempo
 
 **Changes in functionality:**
 
-  - Added sorting by Genre and Release
-  - Hold Sync to quickly adjust the BPM
-  - Improved timings
-  - Press Shift+Flux to engage Flux Reverse
-  - Press Shift+FX Select to select Mixer FX
-  - Switched BPM coarse and fine adjustment
-  - [Track Deck] Use the Browse knob to zoom in and out of the waveform
-  - [Remix Deck] Use the Browse knob to scroll through pages
+- Added sorting by Genre and Release
+- Hold Sync to quickly adjust the BPM
+- Improved timings
+- Press Shift+Flux to engage Flux Reverse
+- Press Shift+FX Select to select Mixer FX
+- Switched BPM coarse and fine adjustment
+- [Track Deck] Use the Browse knob to zoom in and out of the waveform
+- [Remix Deck] Use the Browse knob to scroll through pages
 
-See `Defines/Prefs.qml` for preferences.
+See `qml/Defines/Prefs.qml` for preferences.
 
 ## Editions
 
@@ -88,19 +88,21 @@ See `Defines/Prefs.qml` for preferences.
 
 **Mac:**
 
-  - Navigate to /Applications/Native Instruments/Traktor Pro 4
-  - Right click Traktor Pro 4.app, then click Show Package Contents
-  - Navigate to Contents/Resources/qml
-  - Make a backup of this folder!
-  - Replace the CSI, Defines and Screens folders
-  - Restart Traktor
+- Navigate to /Applications/Native Instruments/Traktor Pro 4
+- Right click Traktor Pro 4.app, then click Show Package Contents
+- Navigate to Contents/Resources/qml
+- Make a backup of this folder!
+- Copy the contents of the nested `qml/` subdirectory (CSI, Defines, Screens folders)
+- Paste them into Contents/Resources/qml
+- Restart Traktor
 
 **Windows:**
 
-  - Navigate to C:\Program Files\Native Instruments\Traktor Pro 4\Resources64\qml
-  - Make a backup of this folder!
-  - Replace the CSI, Defines and Screens folders
-  - Restart Traktor
+- Navigate to C:\Program Files\Native Instruments\Traktor Pro 4\Resources64\qml
+- Make a backup of this folder!
+- Copy the contents of the nested `qml/` subdirectory (CSI, Defines, Screens folders)
+- Paste them into Resources64\qml
+- Restart Traktor
 
 ## Screenshots
 
