@@ -22,18 +22,21 @@ This `qml/` directory combines the following mods on top of the traktor-kontrol-
 
 ---
 
-## Installation (Traktor 4.4.2, macOS)
+## Installation (Traktor 4.4.2, macOS & Windows)
+
+Uses the `traktor-mod` script from the handbook repo. **One-time setup** — see [Chapter 08](https://github.com/lsmith77/traktor-kontrol-qml/blob/main/08_SHARING_CHANGES.md#setup-install-script-to-system-path-one-time-setup) for PATH setup instructions.
 
 ```bash
-# Backup first
-cp -r ~/Library/Application\ Support/Native\ Instruments/Traktor\ 4.4.2/qml \
-      ~/Library/Application\ Support/Native\ Instruments/Traktor\ 4.4.2/qml.backup
+# From this repo directory:
+traktor-mod --full
+```
 
-# Copy the qml subdirectory
-cp -r /path/to/this/qml/qml/ \
-      ~/Library/Application\ Support/Native\ Instruments/Traktor\ 4.4.2/qml/
+This backs up your existing `qml` folder automatically, then installs this combined mod.
 
-# Restart Traktor
+**Restore to stock:**
+
+```bash
+traktor-mod restore
 ```
 
 ---
@@ -86,23 +89,9 @@ See `qml/Defines/Prefs.qml` for preferences.
 
 ## How to install
 
-**Mac:**
+Use `traktor-mod` — see the [Installation](#installation-traktor-442-macos--windows) section above.
 
-- Navigate to /Applications/Native Instruments/Traktor Pro 4
-- Right click Traktor Pro 4.app, then click Show Package Contents
-- Navigate to Contents/Resources/qml
-- Make a backup of this folder!
-- Copy the contents of the nested `qml/` subdirectory (CSI, Defines, Screens folders)
-- Paste them into Contents/Resources/qml
-- Restart Traktor
-
-**Windows:**
-
-- Navigate to C:\Program Files\Native Instruments\Traktor Pro 4\Resources64\qml
-- Make a backup of this folder!
-- Copy the contents of the nested `qml/` subdirectory (CSI, Defines, Screens folders)
-- Paste them into Resources64\qml
-- Restart Traktor
+For setup instructions and a full guide to backup, restore, and combining mods, see the **[Traktor QML Handbook](https://github.com/lsmith77/traktor-kontrol-qml)**.
 
 ## Screenshots
 
