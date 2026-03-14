@@ -9,10 +9,10 @@ This `qml/` directory combines the following mods on top of the traktor-kontrol-
 | Mod                                                                                                | Version         | Controllers | Files                                  |
 | -------------------------------------------------------------------------------------------------- | --------------- | ----------- | -------------------------------------- |
 | [traktor-kontrol-screens Nexus](https://github.com/ErikMinekus/traktor-kontrol-screens/tree/nexus) | nexus @ f0a5027 | All         | Baseline                               |
-| [traktor-kontrol-d2 Stem Mods](https://github.com/lsmith77/traktor-kontrol-d2/releases/tag/v0.5.0) | v0.5.0          | D2          | `qml/CSI/Common/Deck_S8Style.qml`      |
+| [traktor-kontrol-d2 Stem Mods](https://github.com/lsmith77/traktor-kontrol-d2/releases/tag/v0.6.2) | v0.6.2          | D2          | `qml/CSI/Common/Deck_S8Style.qml`      |
 | [X1MK3 Performance Mod](https://github.com/lsmith77/X1MK3_PerformanceMod/releases/tag/v12)         | v12             | X1 MK3      | `qml/CSI/X1MK3/`, `qml/Screens/X1MK3/` |
 
-**D2 stem features**: stem mute (pads 1–4), Serato-style FX pads (5–8 → FX Unit 4), shift+pads toggle FX send / filter per stem.
+**D2 stem features**: stem mute (pads 1–4), Serato-style FX pads (5–8 → FX Unit 4), shift+pads toggle FX send / filter per stem, Edit button duplicates deck to sister deck (A↔C or B↔D) with auto stem split.
 
 **X1MK3 features**: MODE overlays, 3 setup pages, BPM/beatgrid control, vinyl break, CDJ-style LEDs, browser mode, mixer overlay, stem superknob, screen feedback.
 

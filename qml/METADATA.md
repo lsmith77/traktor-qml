@@ -21,8 +21,8 @@
 
 | Field          | Value                         |
 | -------------- | ----------------------------- |
-| Version        | v0.5.0                        |
-| Tag            | `v0.5.0` (confirmed via git)  |
+| Version        | 1                             |
+| Tag            | `v0.6.2` (confirmed via git)  |
 | Status         | APPLIED                       |
 | Files modified | `CSI/Common/Deck_S8Style.qml` |
 | Controllers    | D2                            |
@@ -41,6 +41,10 @@
 - Shift + Pads 1-4: Toggle FX send on/off per stem
 - Shift + Pads 5-8: Toggle Filter on/off per stem
 - Press Remix button on Stem deck → resets FX units and re-enters Stem Mode
+- **NEW (v0.6.0):** Edit button in Stem Mode: Duplicate focused deck to sister deck (A↔C or B↔D)
+  - Press: mutes instrumentals on source, triggers duplicate, auto-plays target if source was running
+  - Press again (opposing deck playing): stops opposing deck
+  - Configured via `duplicateDeckOnlyInStemMode` (set to `false` — works on all deck types)
 
 **FX Unit Configuration:**
 
