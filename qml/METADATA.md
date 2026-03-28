@@ -22,7 +22,7 @@
 | Field          | Value                         |
 | -------------- | ----------------------------- |
 | Version        | 1                             |
-| Tag            | `v0.6.2` (confirmed via git)  |
+| Tag            | `v0.7.0` (confirmed via git)  |
 | Status         | APPLIED                       |
 | Files modified | `CSI/Common/Deck_S8Style.qml` |
 | Controllers    | D2                            |
@@ -35,9 +35,11 @@
   - Pad 6: Instrumental Turntable FX (stems 1+2+3, group mode with Beatmasher/Gater)
   - Pad 7: Instrumental Delay+Freeze (Delay on stems 1+2+3, single mode)
   - Pad 8: Vocal Delay+Freeze (Delay on stem 4, single mode)
+  - Shift+release while holding any FX pad: tears down FX without muting the stem
 - **NEW:** Capture button: Toggle all-stems Delay+Freeze lock (toggle on/off, LED indicator)
   - Only active in Stem Mode (configurable via `sfxCaptureFreezeOnlyInStemMode` property)
   - When stem pad pressed, captures freeze automatically ends
+  - WiresGroup remains enabled while a pad is held so shift press mid-hold doesn't break teardown
 - Shift + Pads 1-4: Toggle FX send on/off per stem
 - Shift + Pads 5-8: Toggle Filter on/off per stem
 - Press Remix button on Stem deck → resets FX units and re-enters Stem Mode
@@ -45,6 +47,16 @@
   - Press: mutes instrumentals on source, triggers duplicate, auto-plays target if source was running
   - Press again (opposing deck playing): stops opposing deck
   - Configured via `duplicateDeckOnlyInStemMode` (set to `false` — works on all deck types)
+- **NEW (v0.7.0):** Stem Super Separation (SSS) — vocal/instrumental crossfader on FX knobs 1-4
+  - Shift + FX Knob 1: focused deck only (standard formula — right isolates inst, left isolates vocal)
+  - Shift + FX Knob 2: sibling deck only (standard formula)
+  - Shift + FX Knob 3: other-side deck only (reversed formula)
+  - Shift + FX Knob 4: all 4 decks (focused standard + sibling/other-side/other-sib reversed)
+  - Per-stem soft-takeover: no jumps when engaging; first callback absorbed on shift press
+  - Restore behavior configurable via `sssRestoreMode`: `"snapshot"` (default), `"fader"`, or `"latch"`
+  - Restricted to Stem decks by default (`sssOnlyInStemMode: true`)
+  - **Shift+Flux: toggle persistent StemSuperSeparationMode** (Flux LED pulsates while active; knobs work without holding Shift)
+  - FX unit knob wires suspended while shift is held (SSS takes priority)
 
 **FX Unit Configuration:**
 
