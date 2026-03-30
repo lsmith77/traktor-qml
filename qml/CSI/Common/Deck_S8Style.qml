@@ -1686,7 +1686,10 @@ Module
   AppProperty { id: deckCRunning;   path: "app.traktor.decks.3.running" }
   AppProperty { id: deckDRunning;   path: "app.traktor.decks.4.running" }
 
-  AppProperty { id: previewIsLoaded;  path: "app.traktor.browser.preview_player.is_loaded" }
+  AppProperty { id: previewIsLoaded;     path: "app.traktor.browser.preview_player.is_loaded" }
+  AppProperty { id: previewIsPlaying;    path: "app.traktor.browser.preview_player.play" }
+  AppProperty { id: previewElapsedTime;  path: "app.traktor.browser.preview_player.elapsed_time" }
+  AppProperty { id: previewTrackLength;  path: "app.traktor.browser.preview_content.track_length" }
 
   // Shift //
   property alias shift: shiftProp.value
@@ -1884,9 +1887,13 @@ Module
         enabled: module.screenView.value == ScreenView.browser
 
         Wire { from: "%surface%.back";         to: "screen.exit_browser_node" }
-        Wire { from: "%surface%.browse.push";  to: "screen.open_browser_node";   enabled: screenOverlay.value == Overlay.none }
-        Wire { from: "%surface%.browse.turn";  to: "screen.scroll_browser_row";  enabled: !module.shift }
-        Wire { from: "%surface%.browse.turn";  to: "screen.scroll_browser_page"; enabled:  module.shift }
+        // browse.push: normal open, or Shift+push to load/play/stop preview (load_or_play toggles play without unloading)
+        Wire { from: "%surface%.browse.push";  to: "screen.open_browser_node";                                                      enabled: screenOverlay.value == Overlay.none && !module.shift }
+        Wire { from: "%surface%.browse.push";  to: TriggerPropertyAdapter { path: "app.traktor.browser.preview_player.load_or_play" } enabled: screenOverlay.value == Overlay.none && module.shift }
+        // browse.turn: seek preview player when preview is playing, otherwise scroll browser
+        Wire { from: "%surface%.browse.turn";  to: RelativePropertyAdapter { path: "app.traktor.browser.preview_player.seek"; step: 0.01; mode: RelativeMode.Stepped } enabled: previewIsPlaying.value }
+        Wire { from: "%surface%.browse.turn";  to: "screen.scroll_browser_row";  enabled: !module.shift && !previewIsPlaying.value }
+        Wire { from: "%surface%.browse.turn";  to: "screen.scroll_browser_page"; enabled:  module.shift && !previewIsPlaying.value }
 
         WiresGroup
         {
