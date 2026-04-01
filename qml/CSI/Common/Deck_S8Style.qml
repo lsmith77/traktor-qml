@@ -184,7 +184,9 @@ Module
                                             || (hasBottomControls(deckBType) && deckBIsLoaded.value && decksAssignment == DecksAssignment.BD)
                                             || (hasBottomControls(deckDType) && deckDIsLoaded.value && decksAssignment == DecksAssignment.BD)
 
-  MappingPropertyDescriptor { id: browserIsTemporary;  path: propertiesPath + ".browser.is_temporary";  type: MappingPropertyDescriptor.Boolean; value: false }
+  MappingPropertyDescriptor { id: browserIsTemporary;          path: propertiesPath + ".browser.is_temporary";            type: MappingPropertyDescriptor.Boolean; value: false }
+  MappingPropertyDescriptor { id: browserFullScreenWasOpen;  path: propertiesPath + ".browser.full_screen_was_open";  type: MappingPropertyDescriptor.Boolean; value: false }
+  property bool browserFullScreenActive: false
 
   //------------------------------------------------------------------------------------------------------------------
   //  GENERIC PURPOSE CONSTANTS
@@ -1690,6 +1692,7 @@ Module
   AppProperty { id: previewIsPlaying;    path: "app.traktor.browser.preview_player.play" }
   AppProperty { id: previewElapsedTime;  path: "app.traktor.browser.preview_player.elapsed_time" }
   AppProperty { id: previewTrackLength;  path: "app.traktor.browser.preview_content.track_length" }
+  AppProperty { id: browserFullScreen;   path: "app.traktor.browser.full_screen" }
 
   // Shift //
   property alias shift: shiftProp.value
@@ -1737,6 +1740,11 @@ Module
       else if (screenViewProp.value != ScreenView.browser)
       {
         unloadPreviewPlayer.value = true;
+      }
+      if (screenViewProp.value != ScreenView.browser && browserFullScreenActive)
+      {
+        browserFullScreen.value = browserFullScreenWasOpen.value;
+        browserFullScreenActive = false;
       }
     }
   }
@@ -1876,11 +1884,39 @@ Module
           }
       }
 
+      // Open laptop browser full screen while browse knob is touched; restore on lift
+      SwitchTimer
+      {
+        name: "BrowserFullScreenTimer"
+        resetTimeout: 200
+
+        onSet:
+        {
+          if (!browserFullScreenActive && screenOverlay.value == Overlay.none && !module.shift)
+          {
+            browserFullScreenWasOpen.value = browserFullScreen.value;
+            browserFullScreen.value = true;
+            browserFullScreenActive = true;
+          }
+        }
+
+        onReset:
+        {
+          if (browserFullScreenActive)
+          {
+            browserFullScreen.value = browserFullScreenWasOpen.value;
+            browserFullScreenActive = false;
+          }
+        }
+      }
+
+      Wire { from: "%surface%.browse.touch"; to: "BrowserFullScreenTimer.input"; enabled: module.screenView.value == ScreenView.browser && screenOverlay.value == Overlay.none && !module.shift }
+
       //------------------------------------------------------------------------------------------------------------------
       // Browser
       //------------------------------------------------------------------------------------------------------------------
 
-      AppProperty { id: browserSortId;   path: "app.traktor.browser.sort_id" }
+      AppProperty { id: browserSortId;  path: "app.traktor.browser.sort_id" }
 
       WiresGroup
       {

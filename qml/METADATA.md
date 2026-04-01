@@ -22,7 +22,7 @@
 | Field          | Value                         |
 | -------------- | ----------------------------- |
 | Version        | 1                             |
-| Tag            | `v0.8.0` (confirmed via git)  |
+| Tag            | `v0.9.0` (confirmed via git)  |
 | Status         | APPLIED                       |
 | Files modified | `CSI/Common/Deck_S8Style.qml` |
 | Controllers    | D2                            |
@@ -58,6 +58,7 @@
   - **Shift+Flux: toggle persistent StemSuperSeparationMode** (Flux LED pulsates while active; knobs work without holding Shift)
   - FX unit knob wires suspended while shift is held (SSS takes priority)
 - Preview player: Shift+Browse knob to load/play/stop preview, browse knob seek while previewing (see D2_preview-player.md)
+- Browser Layout: While in browse mode: **Browse knob touch** opens Traktor's browser layout on the laptop screen
 
 **FX Unit Configuration:**
 
